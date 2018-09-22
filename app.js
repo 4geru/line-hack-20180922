@@ -30,6 +30,10 @@ app.post('/callback', line.middleware(config), (req, res) => {
 
 // event handler
 function handleEvent(event) {
+  if (event.type === 'image') {
+    getImage(event);
+  }
+
   if (event.type !== 'message' || event.message.type !== 'text') {
     // ignore non-text-message event
     return Promise.resolve(null);
@@ -40,6 +44,15 @@ function handleEvent(event) {
 
   // use reply API
   return client.replyMessage(event.replyToken, echo);
+}
+
+// ここら辺見れば良さそう
+// https://developers.line.me/ja/reference/messaging-api/#anchor-8ba657d6a144a0b184c89158e60b297e62b9610c
+
+// binaryデータはcontentから
+// https://developers.line.me/ja/reference/messaging-api/#get-content
+function getImage(event){
+
 }
 
 // listen on port
