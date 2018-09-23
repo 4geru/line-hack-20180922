@@ -7,8 +7,8 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 
 const config = {
-      channelSecret: process.env.CHANNEL_SECRET,
-      channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
+  channelSecret: '1ea14b3e23d59a06f527ebefcc195343',
+  channelAccessToken: '+cOw3jSDxbjIHZU3CUt8n1Hggu7xCArh1UQhhbaSu2RTySA8f2QUfaS8xlnp9v68o5J7bnclTzc7AluGsOSHegW6Qaus1cr+JS9jd7oeOLfcWbZr1LAzj7yjOAAMtnedoQLgCGP0oNUiYCltJ21lfAdB04t89/1O/w1cDnyilFU='
 };
 
 var cred = {
@@ -26,16 +26,16 @@ var cloudant = Cloudant(cred.credentials.url);
 const app = express();
 
 app.post('/callback', line.middleware(config), (req, res) => {
-      console.log(req.body.events);
-      Promise
-        .all(req.body.events.map(handleEvent))
-        .then((result) => res.json(result));
+  console.log(req.body.events);
+  Promise
+    .all(req.body.events.map(handleEvent))
+    .then((result) => res.json(result));
 });
 app.get('/api/:userId', (req, res) => {
   console.log(req.params)
   const problem = updateParams(userId);
   res.header('Content-Type', 'application/json; charset=utf-8')
-  return res.send({quiz: problem});
+  return res.send({ quiz: problem });
 });
 app.post('/saveimage/:userId', (req, res) => {
   console.log(req.params)
@@ -51,49 +51,123 @@ app.post('/saveimage/:userId', (req, res) => {
 const client = new line.Client(config);
 
 function handleEvent(event) {
-    insertUserId(event)
-    console.log(event.source)
-    if (event.source.type === 'group') {
-      insertRoomId(event)
-    }
-    if (event.type === 'message' || event.message.type !== 'image') {
-      //return getImage(event);
-    }
-    if (event.type !== 'message' || event.message.type !== 'text') {
-      return Promise.resolve(null);
-    }
-
-    return client.replyMessage(event.replyToken, {
-      type: 'text',
-      text: event.message.text //実際に返信の言葉を入れる箇所
-    });
+  insertUserId(event)
+  console.log(event.source)
+  if (event.type === 'join') {
+    join(event)
+  }
+  if (event.type === 'postback' || event.source.type === 'group') {
+    postback(event)
+  }
+  /*if (event.type === 'message' || event.message.type !== 'image') {
+    //return getImage(event);
+  }
+  if (event.type !== 'message' || event.message.type !== 'text') {
+    return Promise.resolve(null);
+  }
+  return client.replyMessage(event.replyToken, {
+    type: 'text',
+    text: event.message.text //実際に返信の言葉を入れる箇所
+  });*/
 }
 
-function insertUserId(event){
+function postback(e) {
+  var data = e.postback.data;
+  console.log(data);
+}
+
+function join(e) {
+  client.replyMessage(e.replyToken, [{
+    type: 'text',
+    text: 'test' //実際に返信の言葉を入れる箇所
+  }, {
+    "type": "flex",
+    "altText": '難易度を選んでください',
+    "contents": {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "難易度を選んでください",
+            "weight": "bold",
+            "size": "md"
+          }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "md",
+            "action": {
+              "type": "postback",
+              "label": "簡単",
+              "data": "簡単"
+            }
+          },
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "md",
+            "action": {
+              "type": "postback",
+              "label": "普通",
+              "data": "普通"
+            }
+          },
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "md",
+            "action": {
+              "type": "postback",
+              "label": "難しい",
+              "data": "難しい"
+            }
+          },
+          {
+            "type": "spacer",
+            "size": "sm"
+          }
+        ],
+        "flex": 0
+      }
+    }
+  }]);
+}
+
+function insertUserId(event) {
   // データベース
   var dbn = "users";
   var cdb = cloudant.db.use(dbn);
-  const docs = [ { _id: event.source.userId} ]
+  const docs = [{ _id: event.source.userId }]
   console.log(docs)
   // データのINSERT
-  cdb.insert( docs[0], docs[0].type, function(err, body, header) {
-      if (err) { return err; }
-      console.log('You have inserted', body);
+  cdb.insert(docs[0], docs[0].type, function (err, body, header) {
+    if (err) { return err; }
+    console.log('You have inserted', body);
   });
 }
 
-function insertGroupId(event){
+function insertGroupId(event) {
   // データベース
   var dbn = "group";
   var cdb = cloudant.db.use(dbn);
-  const docs = [ { _id: event.source.roomId} ]
+  const docs = [{ _id: event.source.roomId }]
   console.log(docs)
   // データのINSERT
-  cdb.insert( docs[0], docs[0].type, function(err, body, header) {
-      if (err) {
+  cdb.insert(docs[0], docs[0].type, function (err, body, header) {
+    if (err) {
       throw err;
-      }
-      console.log('You have inserted', body);
+    }
+    console.log('You have inserted', body);
   });
 }
 
