@@ -177,6 +177,45 @@ function findQuiz(id){
   });
 }
 
+function getUserQuiz(userId){
+  // データベース
+  var dbn = "rooms";
+  var cdb = cloudant.db.use(dbn);
+  var quiz_id = Math.floor(Math.random() * Math.floor(3))
+  cdb.get(roomId, function(err,data) {
+    console.log("Before update = ", data);
+    data.quiz_id = quiz_id
+    cdb.insert(data, key, function(err, body, header) {
+    if (err) { throw err; } 
+    });
+  });
+  return quiz
+}
+
+function findRoomQuiz(room_id){
+  // データベース
+  var cdb = cloudant.db.use("rooms");
+  query = {
+      "selector": {
+      "_id": room_id
+      },
+      "fields": [
+      "_id",
+      "quiz_id"
+      ]
+  }
+
+  // 検索実行
+  cdb.find(query,function(err, body) {
+    console.log(err)
+      if (err) { throw err; }
+      console.log("Hits:",body.docs.length);
+      for (var i = 0; i < body.docs.length; i++) {
+      console.log(body.docs[i]);
+      }
+  });
+}
+
 app.set("view engine", "ejs");
 app.get("/", (req, res) => { res.render(__dirname + "/index"); })
 app.listen(PORT);
