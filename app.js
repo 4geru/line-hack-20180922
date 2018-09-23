@@ -34,19 +34,15 @@ app.post('/callback', line.middleware(config), (req, res) => {
 });
 app.get('/api/:userId', (req, res) => {
   console.log(req.params)
-  const problem = updateParams(userId);
+  const problem = Math.floor(Math.random() * Math.floor(3))// findRoomQuiz(findUserRoom(userId));
   res.header('Content-Type', 'application/json; charset=utf-8')
   return res.send({quiz: problem});
 });
 app.post('/saveimage/:userId', (req, res) => {
   console.log(req.params)
   req.on('data', function (chunk) {
-    console.log(chunk)
-    console.log(req.params.userId)
     insertImage(req.params.userId,chunk)
   });
-  console.log(req)
-  console.log(req.body)
 })
 
 const client = new line.Client(config);
@@ -62,15 +58,19 @@ function handleEvent(event) {
       insertRoomId(event)
     }
 
-    if (event.type === 'postback' || event.source.type === 'group') {
+    if (event.type === 'postback' && event.source.type === 'room') {
       postback(event)
+
+      return client.replyMessage(event.replyToken,begin_message.begin_message)
     }
-    if (event.type === 'message' || event.message.type !== 'image') {
+
+    // if (event.type === 'message' || event.message.type !== 'image') {
       //return getImage(event);
-    }
+    // }
     if (event.type !== 'message' || event.message.type !== 'text') {
       return Promise.resolve(null);
     }
+
     if (event.message.text === 'mew'){
       return client.replyMessage(event.replyToken,begin_message.begin_message)
     }
@@ -82,20 +82,18 @@ function handleEvent(event) {
 }
 
 function postback(event) {
-  var data = event.postback.data;
-  console.log(data);
+  const data = event.postback.data;
+  updateRoomQuiz(event.source.roomId);
 }
 
 function insertRoomId(event){
+  console.log(event.source.roomId, event.source.userId)
   // データベース
   var cdb = cloudant.db.use('rooms');
   const docs = [ { _id: event.source.roomId} ]
   console.log(docs)
   // データのINSERT
   cdb.insert( docs[0], docs[0].type, function(err, body, header) {
-      if (err) {
-      throw err;
-      }
       console.log('You have inserted', body);
   });
 
@@ -105,9 +103,6 @@ function insertRoomId(event){
   console.log(user_docs)
   // データのINSERT
   cdb.insert( user_docs[0], user_docs[0].type, function(err, body, header) {
-      if (err) {
-      throw err;
-      }
       console.log('You have inserted', body);
   });
 }
@@ -236,6 +231,44 @@ function findRoomQuiz(room_id){
       }
   });
 }
+
+function updateRoomQuiz(roomId){
+    var cdb = cloudant.db.use('rooms');
+    cdb.get(roomId, function(err,data) {
+    if (err) {
+        // 新規の場合
+        const docs = [ { _id: roomId, quiz_id: Math.floor(Math.random() * Math.floor(3))} ]
+        console.log(docs)
+        // データのINSERT
+        cdb.insert( docs[0], docs[0].type, function(err, body, header) {
+            if (err) {
+            throw err;
+            }
+            console.log('You have inserted', body);
+        });
+
+    } else {
+    　　// 既に同じ _id のインデックスがある場合
+    cdb.destroy(data._id, data._rev, function(err, body, header) {
+        if (err) {
+        throw err;
+        }
+
+        const docs = [ { _id: roomId, quiz_id: Math.floor(Math.random() * Math.floor(3))} ]
+        console.log(docs)
+        // データのINSERT
+        cdb.insert( docs[0], docs[0].type, function(err, body, header) {
+            if (err) {
+            throw err;
+            }
+            console.log('You have inserted', body);
+        });
+    });
+    }
+});
+}
+
+
 
 app.set("view engine", "ejs");
 app.get("/", (req, res) => { res.render(__dirname + "/index"); })
