@@ -37,6 +37,10 @@ app.get('/api/:userId', (req, res) => {
   res.header('Content-Type', 'application/json; charset=utf-8')
   return res.send({quiz: problem});
 });
+app.post('/saveimage', (req, res) => {
+  console.log(req)
+  console.log(req.data)
+})
 
 const client = new line.Client(config);
 
