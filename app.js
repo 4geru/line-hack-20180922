@@ -42,6 +42,9 @@ function handleEvent(event) {
   return client.replyMessage(event.replyToken, echo);
 }
 
+app.set("view engine", "ejs");
+app.get("/", (req, res) => { res.render(__dirname + "/index"); })
+
 // listen on port
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
