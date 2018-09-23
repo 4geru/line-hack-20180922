@@ -52,13 +52,13 @@ app.post('/saveimage/:userId', (req, res) => {
 const client = new line.Client(config);
 
 function handleEvent(event) {
-    insertUserId(event)
+
     console.log(event.source)
     if (event.type === 'join') {
       return client.replyMessage(event.replyToken,begin_message.begin_message)
     }
 
-    if (event.source.type === 'group') {
+    if (event.source.type === 'room') {
       insertRoomId(event)
     }
 
@@ -86,27 +86,25 @@ function postback(event) {
   console.log(data);
 }
 
-function insertUserId(event){
+function insertRoomId(event){
   // データベース
-  var dbn = "users";
-  var cdb = cloudant.db.use(dbn);
-  const docs = [ { _id: event.source.userId} ]
-  console.log(docs)
-  // データのINSERT
-  cdb.insert( docs[0], docs[0].type, function(err, body, header) {
-      if (err) { return err; }
-      console.log('You have inserted', body);
-  });
-}
-
-function insertGroupId(event){
-  // データベース
-  var dbn = "group";
-  var cdb = cloudant.db.use(dbn);
+  var cdb = cloudant.db.use('rooms');
   const docs = [ { _id: event.source.roomId} ]
   console.log(docs)
   // データのINSERT
   cdb.insert( docs[0], docs[0].type, function(err, body, header) {
+      if (err) {
+      throw err;
+      }
+      console.log('You have inserted', body);
+  });
+
+  // データベース
+  var cdb = cloudant.db.use('users');
+  const user_docs = [ { _id: event.source.userId, room_id: event.source.roomId} ]
+  console.log(user_docs)
+  // データのINSERT
+  cdb.insert( user_docs[0], user_docs[0].type, function(err, body, header) {
       if (err) {
       throw err;
       }
