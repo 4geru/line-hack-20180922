@@ -7,8 +7,8 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 
 const config = {
-  channelSecret: '1ea14b3e23d59a06f527ebefcc195343',
-  channelAccessToken: '+cOw3jSDxbjIHZU3CUt8n1Hggu7xCArh1UQhhbaSu2RTySA8f2QUfaS8xlnp9v68o5J7bnclTzc7AluGsOSHegW6Qaus1cr+JS9jd7oeOLfcWbZr1LAzj7yjOAAMtnedoQLgCGP0oNUiYCltJ21lfAdB04t89/1O/w1cDnyilFU='
+  channelSecret: process.env.CHANNEL_SECRET,
+  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
 };
 
 var cred = {
