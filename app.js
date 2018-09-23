@@ -33,13 +33,19 @@ app.post('/callback', line.middleware(config), (req, res) => {
 });
 app.get('/api/:userId', (req, res) => {
   console.log(req.params)
-  const problem = Math.floor(Math.random() * Math.floor(3));
+  const problem = updateParams(userId);
   res.header('Content-Type', 'application/json; charset=utf-8')
   return res.send({quiz: problem});
 });
-app.post('/saveimage', (req, res) => {
+app.post('/saveimage/:userId', (req, res) => {
+  console.log(req.params)
+  req.on('data', function (chunk) {
+    console.log(chunk)
+    console.log(req.params.userId)
+    insertImage(req.params.userId,chunk)
+  });
   console.log(req)
-  console.log(req.data)
+  console.log(req.body)
 })
 
 const client = new line.Client(config);
@@ -96,7 +102,7 @@ function getImage(event){
   .then((stream) => {
     stream.on('data', (chunk) => {
       console.log(chunk)
-      insertImage(event, chunk)
+      insertImage(event.source.userId, chunk)
     });
     stream.on('error', (err) => {
       console.log("erroe")
@@ -104,13 +110,13 @@ function getImage(event){
   });
 }
 
-function insertImage(event, binary){
+function insertImage(userId, binary){
   // データベース
   var dbn = "images";
   var cdb = cloudant.db.use(dbn);
 
   const docs = [ { 
-    user_id: event.source.userId,
+    user_id: userId,
     "_attachments": {
       "image": { 
         "content_type": "image/jpeg",  
