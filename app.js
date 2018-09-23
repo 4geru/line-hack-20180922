@@ -91,5 +91,93 @@ function insertGroupId(event){
   });
 }
 
+function getImage(event){
+  client.getMessageContent(event.message.id)
+  .then((stream) => {
+    stream.on('data', (chunk) => {
+      console.log(chunk)
+      insertImage(event, chunk)
+    });
+    stream.on('error', (err) => {
+      console.log("erroe")
+    });
+  });
+}
+
+function insertImage(event, binary){
+  // データベース
+  var dbn = "images";
+  var cdb = cloudant.db.use(dbn);
+
+  const docs = [ { 
+    user_id: event.source.userId,
+    "_attachments": {
+      "image": { 
+        "content_type": "image/jpeg",  
+        "data": binary.toString('base64')
+      }
+    }
+  } ]
+  console.log(docs)
+  // データのINSERT
+  cdb.insert( docs[0], docs[0].type, function(err, body, header) {
+      if (err) {
+      throw err;
+      }
+      console.log('You have inserted', body);
+  });
+}
+
+function findQuiz(id){
+  // データベース
+  var dbn = "quiz";
+  var cdb = cloudant.db.use(dbn);
+  query = {
+      "selector": {
+      "id": id
+      },
+      "fields": [
+      "_id",
+      "answer"
+      ]
+  }
+
+  // 検索実行
+  cdb.find(query,function(err, body) {
+      if (err) { throw err; }
+      console.log("Hits:",body.docs.length);
+      for (var i = 0; i < body.docs.length; i++) {
+      console.log(body.docs[i]);
+      }
+  });
+}
+
+function findQuiz(id){
+  // データベース
+  var dbn = "quiz";
+  var cdb = cloudant.db.use(dbn);
+  console.log(id)
+  query = {
+      "selector": {
+      "_id": id.toString()
+      },
+      "fields": [
+      "_id",
+      "answer"
+      ]
+  }
+
+  // 検索実行
+  cdb.find(query,function(err, body) {
+      if (err) { throw err; }
+      console.log("Hits:",body.docs.length);
+      for (var i = 0; i < body.docs.length; i++) {
+      console.log(body.docs[i]);
+      }
+  });
+}
+
+app.set("view engine", "ejs");
+app.get("/", (req, res) => { res.render(__dirname + "/index"); })
 app.listen(PORT);
 console.log(`Server running at ${PORT}`);
