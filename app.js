@@ -1,52 +1,91 @@
 'use strict';
 
-const line = require('@line/bot-sdk');
 const express = require('express');
+const line = require('@line/bot-sdk');
+require('dotenv').config();
 
-// create LINE SDK config from env variables
+const PORT = process.env.PORT || 3000;
+
 const config = {
-  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.CHANNEL_SECRET,
+      channelSecret: process.env.CHANNEL_SECRET,
+      channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN
 };
 
-// create LINE SDK client
-const client = new line.Client(config);
+var cred = {
+  "credentials": {
+    "username": "1a597e87-3f65-4264-bba1-5d2edf6561cf-bluemix",
+    "password": "ec68e4387c4ca7885885d3983edaaa807ee12874ebbbabb6f7dc5ad34163128e",
+    "host": "1a597e87-3f65-4264-bba1-5d2edf6561cf-bluemix.cloudant.com",
+    "port": 443,
+    "url": "https://1a597e87-3f65-4264-bba1-5d2edf6561cf-bluemix:ec68e4387c4ca7885885d3983edaaa807ee12874ebbbabb6f7dc5ad34163128e@1a597e87-3f65-4264-bba1-5d2edf6561cf-bluemix.cloudant.com",
+  }
+}
+var Cloudant = require('cloudant')
+var cloudant = Cloudant(cred.credentials.url);
 
-// create Express app
-// about Express itself: https://expressjs.com/
 const app = express();
 
-// register a webhook handler with middleware
-// about the middleware, please refer to doc
 app.post('/callback', line.middleware(config), (req, res) => {
-  Promise
-    .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result))
-    .catch((err) => {
-      console.error(err);
-      res.status(500).end();
-    });
+      console.log(req.body.events);
+      Promise
+        .all(req.body.events.map(handleEvent))
+        .then((result) => res.json(result));
+});
+app.get('/api/:userId', (req, res) => {
+  console.log(req.params)
+  const problem = Math.floor(Math.random() * Math.floor(3));
+  res.header('Content-Type', 'application/json; charset=utf-8')
+  return res.send({quiz: problem});
 });
 
-// event handler
+const client = new line.Client(config);
+
 function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    // ignore non-text-message event
-    return Promise.resolve(null);
-  }
+    insertUserId(event)
+    console.log(event.source)
+    if (event.source.type === 'group') {
+      insertRoomId(event)
+    }
+    if (event.type === 'message' || event.message.type !== 'image') {
+      //return getImage(event);
+    }
+    if (event.type !== 'message' || event.message.type !== 'text') {
+      return Promise.resolve(null);
+    }
 
-  // create a echoing text message
-  const echo = { type: 'text', text: event.message.text };
-
-  // use reply API
-  return client.replyMessage(event.replyToken, echo);
+    return client.replyMessage(event.replyToken, {
+      type: 'text',
+      text: event.message.text //実際に返信の言葉を入れる箇所
+    });
 }
 
-app.set("view engine", "ejs");
-app.get("/", (req, res) => { res.render(__dirname + "/index"); })
+function insertUserId(event){
+  // データベース
+  var dbn = "users";
+  var cdb = cloudant.db.use(dbn);
+  const docs = [ { _id: event.source.userId} ]
+  console.log(docs)
+  // データのINSERT
+  cdb.insert( docs[0], docs[0].type, function(err, body, header) {
+      if (err) { return err; }
+      console.log('You have inserted', body);
+  });
+}
 
-// listen on port
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`listening on ${port}`);
-});
+function insertGroupId(event){
+  // データベース
+  var dbn = "group";
+  var cdb = cloudant.db.use(dbn);
+  const docs = [ { _id: event.source.roomId} ]
+  console.log(docs)
+  // データのINSERT
+  cdb.insert( docs[0], docs[0].type, function(err, body, header) {
+      if (err) {
+      throw err;
+      }
+      console.log('You have inserted', body);
+  });
+}
+
+app.listen(PORT);
+console.log(`Server running at ${PORT}`);
