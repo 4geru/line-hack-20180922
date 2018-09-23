@@ -2,6 +2,7 @@
 
 const express = require('express');
 const line = require('@line/bot-sdk');
+const begin_message = require('./lib/begin_message')
 require('dotenv').config();
 
 const PORT = process.env.PORT || 3000;
@@ -53,8 +54,16 @@ const client = new line.Client(config);
 function handleEvent(event) {
     insertUserId(event)
     console.log(event.source)
+    if (event.type === 'join') {
+      return client.replyMessage(event.replyToken,begin_message.begin_message)
+    }
+
     if (event.source.type === 'group') {
       insertRoomId(event)
+    }
+
+    if (event.type === 'postback' || event.source.type === 'group') {
+      postback(event)
     }
     if (event.type === 'message' || event.message.type !== 'image') {
       //return getImage(event);
@@ -62,11 +71,19 @@ function handleEvent(event) {
     if (event.type !== 'message' || event.message.type !== 'text') {
       return Promise.resolve(null);
     }
+    if (event.message.text === 'mew'){
+      return client.replyMessage(event.replyToken,begin_message.begin_message)
+    }
 
     return client.replyMessage(event.replyToken, {
       type: 'text',
       text: event.message.text //実際に返信の言葉を入れる箇所
     });
+}
+
+function postback(event) {
+  var data = event.postback.data;
+  console.log(data);
 }
 
 function insertUserId(event){
